@@ -172,7 +172,6 @@ def bfs(automaton):
             
     return distances
 
-
 UNVISITED = -1
 id = 0
 sccCount = 0
@@ -196,7 +195,7 @@ def dfs(automaton, at):
     for to in automaton.get_children(at):        
         if ids[to] == UNVISITED:
             dfs(automaton, to)
-        if visited[to]:
+        if visited[to] and to in stack:
             low[at] = min(low[at], low[to])
     
     if ids[at] == low[at]:
@@ -255,19 +254,31 @@ if __name__ == "__main__":
     # A.start_state = 0
     # A.print_automaton()
     
-    A.states = set(n for n in range(5))
-    A.transitions = {
-        0: {'a': 1, 'b': 3},
-        1: {'a': 2},
-        2: {'a': 0},
-        3: {'a': 4},
-        4: {'a': 3}
-        }
-    A.final_states = {2}
-    A.start_state = 0
-    A.print_automaton()
+    # A.states = set(n for n in range(5))
+    # A.transitions = {
+    #     0: {'a': 1, 'b': 3},
+    #     1: {'a': 2},
+    #     2: {'a': 0},
+    #     3: {'a': 4},
+    #     4: {'a': 3}
+    #     }
+    # A.final_states = {2}
+    # A.start_state = 0
+    # A.print_automaton()
     
-    # A.visualize()
+    # A.states = {2,0,1}
+    # A.transitions = {
+    #     2: {'a': 2, 'b': 0},
+    #     0: {'a': 1},
+    #     1: {'a': 0},
+    #     # 3: {'a': 3},
+    #     # 4: {'a': 4}
+    #     }
+    # A.final_states = {2}
+    # A.start_state = 0
+    # A.print_automaton()
+    
+    A.visualize()
     
     
     # Q2
@@ -282,7 +293,7 @@ if __name__ == "__main__":
     M.remove_unreachable(A_distances)
     
     M.hopcroft_optimization()
-    M.print_automaton()
+    # M.print_automaton()
    
     # Q4
     M_distances = bfs(M)
