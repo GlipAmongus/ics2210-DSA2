@@ -46,9 +46,20 @@ class Automaton:
     
         self.states.difference_update(unreachable_states)
         self.final_states.difference_update(unreachable_states)
+    
+    def __reverse_transitions(self):        
+        reverse_transitions = {letter: {} for letter in self.alphabet}
+
+        for state, transitions in self.transitions.items():
+            for letter, next_state in transitions.items():
+                if next_state not in reverse_transitions[letter]:
+                    reverse_transitions[letter][next_state] = set()
+                reverse_transitions[letter][next_state].add(state)
+
+        return reverse_transitions        
             
-    def __find_partition(self, state, working):
-        for partition in working:
+    def __find_partition(self, state, waiting):
+        for partition in waiting:
             if state in partition:
                 return frozenset(partition)
         return None
@@ -74,34 +85,43 @@ class Automaton:
         self.start_state = state_names[state_map[self.start_state]]
         
         return
-        
+      
     def hopcroft_optimization(self):
         partitions = [self.states - self.final_states, self.final_states]
-        working = copy.deepcopy(partitions)
-         
-        while working:
-            A = working.pop()
+        waiting = copy.deepcopy(partitions) # O(n). 
+        
+        reverse_transitions = self.__reverse_transitions()
+        
+        while waiting: # O(nlogn).
+            A = waiting.pop()
+            A_parents = set()
             
             for letter in self.alphabet:
-                               
-                A_parents = {state for state in self.states if self.get_child(state, letter) in A}
+                # Define the split. 
+                for state in A:
+                    if state in reverse_transitions[letter]:
+                        A_parents.update(reverse_transitions[letter][state])
                 
                 for partition in partitions:
-                    intersect = partition.intersection(A_parents)
-                    difference = partition - A_parents
+                    # Compute the split.
+                    intersect = partition.intersection(A_parents)   # P'  - Leads to A
+                    difference = partition - A_parents              # P'' - ~Leads to A
 
+                    # If a split has occurec
                     if intersect and difference:
+                        # Update partition P with P' and P''
                         partitions.remove(partition)
                         partitions.extend([intersect, difference])
                     
-                        if partition in working:
-                            working.remove(partition)
-                            working.extend([intersect, difference])
+                        # Update waiting set
+                        if partition in waiting:
+                            waiting.remove(partition)
+                            waiting.extend([intersect, difference])
                         else:
-                            working.append(intersect if len(intersect) <= len(difference) else difference)
+                            waiting.append(intersect if len(intersect) <= len(difference) else difference)
                             
         self.__update_automaton(partitions)
-        return
+        return  
       
     def print_automaton(self):
         """ Pretty-prints the automaton. """
@@ -236,6 +256,51 @@ def find_SCCs(automaton):
 if __name__ == "__main__":
     # Q1
     A = Automaton()
+       
+    # Q2
+    A_distances = bfs(A)
+    print("\n--- Automaton Information ---\n")
+    print(f"Number of states of A: {len(A.states)}")
+    print(f"Depth of A: {max(A_distances.values())}")
+    
+    # Q3 
+    M = A.copy()
+    M2 = A.copy()
+
+    M.remove_unreachable(A_distances)
+    M.print_automaton()
+    M2.remove_unreachable(A_distances)
+    
+    M.hopcroft_optimization()
+    M2.hopcroft_optimizationChildren()
+   
+    # Q4
+    M_distances = bfs(M)
+    print(f"\nNumber of states of M: {len(M.states)}")
+    print(f"Depth of M: {max(M_distances.values())}")
+    print("\n-----------------------------")
+    
+    M2_distances = bfs(M2)
+    print(f"\nNumber of states of M2: {len(M2.states)}")
+    print(f"Depth of M2: {max(M2_distances.values())}")
+    print("\n-----------------------------")
+    
+    # Q5
+    A_SCCs = find_SCCs(A)
+    M_SCCs = find_SCCs(M)
+    
+    print("\n------ SCC Information ------\n")
+    print(f"Number of strongly connected components in A: {A_SCCs[0]}")
+    print(f"Size of the largest SCC in A: {A_SCCs[1]}")
+    print(f"Size of the smallest SCC in A: {A_SCCs[2]}")
+    
+    print(f"\nNumber of strongly connected components in M: {M_SCCs[0]}")
+    print(f"Size of the largest SCC in M: {M_SCCs[1]}")
+    print(f"Size of the smallest SCC in M: {M_SCCs[2]}")
+    print("\n-----------------------------")
+    
+    
+    # ------------- Testing -------------- 
     # A.print_automaton()
     
     # hard code automaton
@@ -278,40 +343,4 @@ if __name__ == "__main__":
     # A.start_state = 0
     # A.print_automaton()
     
-    A.visualize()
-    
-    
-    # Q2
-    A_distances = bfs(A)
-    print("\n--- Automaton Information ---\n")
-    print(f"Number of states of A: {len(A.states)}")
-    print(f"Depth of A: {max(A_distances.values())}")
-    
-    # Q3 
-    M = A.copy()
-
-    M.remove_unreachable(A_distances)
-    
-    M.hopcroft_optimization()
-    # M.print_automaton()
-   
-    # Q4
-    M_distances = bfs(M)
-    print(f"\nNumber of states of M: {len(M.states)}")
-    print(f"Depth of M: {max(M_distances.values())}")
-    print("\n-----------------------------")
-    
-    # Q5
-    A_SCCs = find_SCCs(A)
-    M_SCCs = find_SCCs(M)
-    
-    print("\n------ SCC Information ------\n")
-    print(f"Number of strongly connected components in A: {A_SCCs[0]}")
-    print(f"Size of the largest SCC in A: {A_SCCs[1]}")
-    print(f"Size of the smallest SCC in A: {A_SCCs[2]}")
-    
-    print(f"\nNumber of strongly connected components in M: {M_SCCs[0]}")
-    print(f"Size of the largest SCC in M: {M_SCCs[1]}")
-    print(f"Size of the smallest SCC in M: {M_SCCs[2]}")
-    print("\n-----------------------------")
-    
+    # A.visualize()
